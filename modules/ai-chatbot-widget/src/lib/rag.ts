@@ -1,20 +1,23 @@
-import { vectorStore } from './vector-store'
-import { RAG_CONFIG } from './config'
+import { searchKnowledge } from './vector-store'
 
-// 벡터 검색으로 관련 컨텍스트를 가져와 문자열로 반환
+/**
+ * 질문과 관련된 문서를 검색하여 컨텍스트 문자열로 반환
+ */
 export async function retrieveContext(query: string): Promise<string> {
-  const results = await vectorStore.search(query, RAG_CONFIG.topK)
+  const results = await searchKnowledge(query)
 
   if (results.length === 0) {
     return ''
   }
 
   return results
-    .map((r, i) => `[문서 ${i + 1}]\n${r.content}`)
+    .map((r, i) => `[문서 ${i + 1}] (관련도: ${(r.score * 100).toFixed(0)}%)\n${r.content}`)
     .join('\n\n')
 }
 
-// SYSTEM_PROMPT의 {context} 자리에 검색 결과를 주입
+/**
+ * SYSTEM_PROMPT의 {context} 자리에 검색 결과를 주입
+ */
 export function injectContext(systemPrompt: string, context: string): string {
   if (!context) {
     return systemPrompt.replace('{context}', '관련 문서를 찾지 못했습니다.')

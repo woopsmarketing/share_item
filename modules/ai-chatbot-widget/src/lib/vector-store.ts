@@ -1,5 +1,6 @@
-// 벡터 DB 추상화 인터페이스
-// 복사 후 사용할 벡터 DB에 맞게 구현체를 선택하세요
+import { vectorIndex, KNOWLEDGE_NAMESPACE } from './upstash'
+import { getEmbedding } from './embeddings'
+import { RAG_CONFIG } from './config'
 
 export interface VectorSearchResult {
   content: string
@@ -7,24 +8,24 @@ export interface VectorSearchResult {
   metadata?: Record<string, unknown>
 }
 
-export interface VectorStore {
-  search(query: string, topK: number): Promise<VectorSearchResult[]>
-}
+/**
+ * Upstash Vector에서 질문과 관련된 문서 검색
+ */
+export async function searchKnowledge(query: string): Promise<VectorSearchResult[]> {
+  const queryVector = await getEmbedding(query)
+  const ns = vectorIndex.namespace(KNOWLEDGE_NAMESPACE)
 
-// TODO: 아래 중 하나를 선택하여 구현
-// - PineconeVectorStore: Pinecone 사용 시 (npm install @pinecone-database/pinecone)
-// - SupabaseVectorStore: Supabase pgvector 사용 시 (npm install @supabase/supabase-js)
+  const results = await ns.query({
+    vector: queryVector,
+    topK: RAG_CONFIG.topK,
+    includeMetadata: true,
+  })
 
-// 개발/테스트용 Mock 구현체 (실제 벡터 DB 없이 로컬 테스트 가능)
-export class MockVectorStore implements VectorStore {
-  async search(_query: string, topK: number): Promise<VectorSearchResult[]> {
-    // 실제 구현 시 이 부분을 교체하세요
-    return Array.from({ length: topK }, (_, i) => ({
-      content: `샘플 컨텍스트 문서 ${i + 1}: 여기에 프로젝트 관련 내용이 들어갑니다.`,
-      score: 0.9 - i * 0.1,
+  return results
+    .filter((r) => r.metadata && (r.metadata as Record<string, unknown>).content)
+    .map((r) => ({
+      content: (r.metadata as Record<string, unknown>).content as string,
+      score: r.score,
+      metadata: r.metadata as Record<string, unknown>,
     }))
-  }
 }
-
-// 현재 사용할 벡터 스토어 — MockVectorStore를 실제 구현체로 교체
-export const vectorStore: VectorStore = new MockVectorStore()

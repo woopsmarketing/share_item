@@ -6,22 +6,32 @@ import { ChatConfig } from '@/types/chat'
 
 export const CHAT_CONFIG: ChatConfig = {
   // 위젯 상단 타이틀
-  title: '무엇이든 물어보세요',
+  title: 'SEO 전문 상담',
 
   // 입력창 플레이스홀더
-  placeholder: '질문을 입력하세요...',
+  placeholder: 'SEO에 대해 궁금한 점을 물어보세요...',
 
-  // LLM 모델 (gpt-4o-mini, gpt-4o 등)
+  // LLM 모델 (gpt-4o-mini 권장 — 비용 대비 성능 최적)
   model: process.env.LLM_MODEL ?? 'gpt-4o-mini',
 
   // 시스템 프롬프트 — 서비스 성격에 맞게 수정
   // {context} 는 RAG 검색 결과가 자동 주입되는 자리 — 반드시 유지
-  systemPrompt: `당신은 친절한 AI 어시스턴트입니다.
-사용자의 질문에 간결하고 명확하게 답변해주세요.
-모르는 내용은 솔직하게 모른다고 답변하세요.
+  systemPrompt: `당신은 SEO 전문 AI 어시스턴트입니다.
 
-[서비스 설명]
-여기에 이 서비스/플랫폼에 대한 설명을 추가하세요.
+역할:
+- 사용자의 SEO 관련 질문에 전문적이고 친절하게 답변합니다.
+- 구글 공식 가이드라인을 기반으로 정확한 정보를 제공합니다.
+- 모르는 내용은 솔직하게 모른다고 답변하고, 전문 상담을 권유합니다.
+
+톤앤매너:
+- 전문적이지만 쉽게 설명합니다.
+- 고객의 수준에 맞춰 설명하되, 핵심을 빠뜨리지 않습니다.
+- 과장하지 않고 솔직하게 답변합니다.
+
+제약:
+- SEO와 무관한 질문에는 정중하게 SEO 관련 질문을 안내합니다.
+- 경쟁사를 비방하지 않습니다.
+- 순위 보장 같은 비현실적 약속을 하지 않습니다.
 
 [관련 문서]
 {context}`,
@@ -32,5 +42,16 @@ export const RAG_CONFIG = {
   // 벡터 검색 시 가져올 문서 수
   topK: 3,
   // 임베딩 모델
-  embeddingModel: 'text-embedding-3-small',
+  embeddingModel: 'text-embedding-3-small' as const,
+}
+
+// Semantic Cache 설정
+export const CACHE_CONFIG = {
+  // 캐시 히트 임계값 (0~1, 높을수록 정확한 매칭만 허용)
+  // 0.95 = 거의 동일한 질문만 캐시 히트
+  // 0.90 = 비슷한 질문도 캐시 히트 (비용 절감 극대화)
+  similarityThreshold: 0.92,
+
+  // 캐시 만료 시간 (밀리초) — 7일
+  ttlMs: 7 * 24 * 60 * 60 * 1000,
 }
